@@ -64,7 +64,7 @@ func main() {
 	}
 
 	if err := builder.WebhookManagedBy(mgr).
-		For(&appsv1.Deployment{}).
+		For(&appsv1.StatefulSet{}).
 		WithDefaulter(&pkg.StatefulSetVolume{Client: mgr.GetClient()}).
 		Complete(); err != nil {
 		entryLog.Error(err, "unable to create webhook", "webhook", "dp")

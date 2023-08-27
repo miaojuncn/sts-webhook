@@ -26,7 +26,7 @@ build: fmt vet ## Build binary.
 	env CGO_ENABLED=0 go build -a -o webhook main.go
 
 .PHONY: run
-run: fmt vet cert ## Run a webhook from your host.
+run: fmt vet ## Run a webhook from your host.
 	go run ./main.go --cert-dir certs
 
 .PHONY: docker-build
@@ -41,6 +41,12 @@ docker-push: ## Push docker image.
 
 .PHONY: deploy-inner
 deploy-inner: cert ## Deploy webhook.
+	@echo "create server TLS secret from keys"
+	@kubectl create secret tls $(CERT_SECRET) \
+            --key="certs/tls.key" \
+            --cert="certs/tls.crt" \
+            --dry-run=client -o yaml \
+    	| kubectl -n $(NAMESPACE) apply -f -
 	@echo "deploy mutating webhook configuration"
 	@caBundle=$(shell openssl base64 -A < certs/ca.crt); \
 	sed -e "s@{{caBundle}}@$${caBundle}@g; s@{{namespace}}@$(NAMESPACE)@g" < manifests/config-inner.yaml \
@@ -61,11 +67,10 @@ undeploy-inner: ## Undeploy webhook.
 deploy-outer: cert ## Deploy webhook.
 	@echo "deploy mutating webhook configuration"
 	@caBundle=$(shell openssl base64 -A < certs/ca.crt); \
-	sed -e "s@{{caBundle}}@$${caBundle}@g; s@{{namespace}}@$(NAMESPACE)@g; s@{{url}}@https://$(LOCAL_IP):9443/mutate@g" < manifests/config-outer.yaml \
+	sed -e "s@{{caBundle}}@$${caBundle}@g; s@{{namespace}}@$(NAMESPACE)@g; s@{{local_ip}}@$(LOCAL_IP)@g" < manifests/config-outer.yaml \
 		| kubectl apply -f -
 	@echo "deploy mutating webhook service"
-	@sed -e "s@{{image}}@$(IMAGE)@g; s@{{namespace}}@$(NAMESPACE)@g" < manifests/sts-webhook.yaml \
-     	| kubectl apply -f -
+	make run
 
 .PHONY: undeploy-outer
 undeploy-outer: ## Undeploy webhook.
@@ -80,7 +85,7 @@ undeploy-outer: ## Undeploy webhook.
 .PHONY: cert
 cert: ## Generate certificates for webhook.
 	@sed -e "s@192.168.1.10@$(LOCAL_IP)@g" ./hack/generate-certs.sh \
-		| bash -s -- --service sts-webhook --namespace $(NAMESPACE) --secret $(CERT_SECRET)
+		| bash -s -- --service sts-webhook --namespace $(NAMESPACE)
 
 .PHONY: save-cert
 save-cert: ## Download certificates from k8s secrets.

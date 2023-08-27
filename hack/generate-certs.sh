@@ -13,7 +13,6 @@ The following flags are required.
 
        --service          Service name of webhook.
        --namespace        Namespace where webhook service and secret reside.
-       --secret           Secret name for server key/cert pair.
 EOF
     exit 1
 }
@@ -22,10 +21,6 @@ while [[ $# -gt 0 ]]; do
     case ${1} in
         --service)
             service="$2"
-            shift
-            ;;
-        --secret)
-            secret="$2"
             shift
             ;;
         --namespace)
@@ -40,7 +35,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 [ -z "${service}" ] && echo "ERROR: --service flag is required" && exit 1
-[ -z "${secret}" ] && echo "ERROR: --secret flag is required" && exit 1
 [ -z "${namespace}" ] && namespace=default
 
 if [ ! -x "$(command -v openssl)" ]; then
@@ -83,10 +77,3 @@ echo "create server key/cert"
 openssl genrsa -out certs/tls.key 2048
 openssl req -new -key certs/tls.key -subj "/CN=${service}.${namespace}.svc" -out "${tmpDir}"/tls.csr -config "${tmpDir}"/csr.conf
 openssl x509 -req -days 3650 -in "${tmpDir}"/tls.csr -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out certs/tls.crt -extfile "${tmpDir}"/csr.conf -extensions v3_req
-
-echo "create server TLS secret from keys"
-kubectl create secret tls "${secret}" \
-        --key="certs/tls.key" \
-        --cert="certs/tls.crt" \
-        --dry-run=client -o yaml |
-    kubectl -n ${namespace} apply -f -

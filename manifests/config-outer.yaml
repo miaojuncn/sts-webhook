@@ -6,7 +6,7 @@ webhooks:
   - name: sts-webhook.{{namespace}}.svc
     clientConfig:
       caBundle: {{caBundle}}
-      url: {{url}}
+      url: https://{{local_ip}}:9443/mutate-apps-v1-statefulset
     matchPolicy: Exact
     rules:
       - apiGroups:
@@ -14,7 +14,7 @@ webhooks:
         apiVersions:
           - v1
         resources:
-          - deployments
+          - statefulsets
         operations:
           - CREATE
           - UPDATE

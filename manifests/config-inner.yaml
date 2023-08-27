@@ -9,7 +9,7 @@ webhooks:
       service:
         name: sts-webhook
         namespace: {{namespace}}
-        path: "/mutate"
+        path: "/mutate-apps-v1-statefulset"
         port: 9443
     matchPolicy: Exact
     rules:
@@ -18,7 +18,7 @@ webhooks:
         apiVersions:
           - v1
         resources:
-          - deployments
+          - statefulsets
         operations:
           - CREATE
           - UPDATE

@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// +kubebuilder:webhook:path=/mutate,mutating=true,failurePolicy=fail,groups="apps",resources=statefulsets,verbs=create;update,versions=v1,name=mj
+// +kubebuilder:webhook:path=/mutate-apps-v1-statefulset,mutating=true,failurePolicy=fail,groups="apps",resources=statefulsets,verbs=create;update,versions=v1,name=mj
 
 // StatefulSetVolume snapshot volume
 type StatefulSetVolume struct {
