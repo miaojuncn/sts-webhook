@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sts-webhook
+  name: sts-webhook
+  namespace: {{namespace}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sts-webhook
+  template:
+    metadata:
+      labels:
+        app: sts-webhook
+    spec:
+      containers:
+        - image: {{image}}
+          name: sts-webhook
+          args:
+            - "--cert-dir"
+            - "/run/secrets/tls"
+          ports:
+            - containerPort: 9443
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /run/secrets/tls
+              name: webhook-tls
+              readOnly: true
+          securityContext:
+            runAsUser: 65532
+      volumes:
+        - name: webhook-tls
+          secret:
+            secretName: webhook-tls
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sts-webhook
+  name: sts-webhook
+  namespace: {{namespace}}
+spec:
+  ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 9443
+  selector:
+    app: sts-webhook
+  type: ClusterIP
