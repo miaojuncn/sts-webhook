@@ -1,7 +1,7 @@
 IMAGE 		:= registry.devops.rivtower.com/library/sts-webhook:latest
 CERT_SECRET	:= webhook-tls
 NAMESPACE	:= default
-LOCAL_IP	:= "192.168.31.183"
+LOCAL_IP	:= "192.168.10.182"
 
 ##@ General
 
@@ -60,7 +60,7 @@ undeploy-inner: ## Undeploy webhook.
 	@echo "undeploy service and related config"
 	@sed -e "s@{{namespace}}@$(NAMESPACE)@g; s@{{image}}@$(IMAGE)@g" < manifests/sts-webhook.yaml \
  		| kubectl delete -f -
-	kubectl delete -f manifests/config-inner.yaml
+	kubectl delete mutatingwebhookconfigurations sts-webhook
 	kubectl delete secret $(CERT_SECRET) -n $(NAMESPACE)
 
 .PHONY: deploy-outer

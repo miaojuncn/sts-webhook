@@ -7,10 +7,10 @@ import (
 	"github.com/miaojuncn/sts-webhook/pkg"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2/klogr"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -19,11 +19,11 @@ import (
 
 var (
 	scheme   = runtime.NewScheme()
-	entryLog = log.Log.WithName("entrypoint")
+	setupLog = log.Log.WithName("setup")
 )
 
 func init() {
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.StatefulSet{})
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.StatefulSet{}, &appsv1.StatefulSetList{})
 }
 
 func main() {
@@ -38,15 +38,9 @@ func main() {
 	flag.StringVar(&certDir, "cert-dir", "", "CertDir is the directory that contains the server key and certificate.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false, "Enable leader election for controller manager.")
 
-	opts := zap.Options{
-		Development: true,
-	}
-	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
-	log.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	log.SetLogger(klogr.New())
 
-	// Set up a Manager
-	entryLog.Info("setting up manager")
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
 		Scheme: scheme,
 		Metrics: server.Options{
@@ -59,7 +53,7 @@ func main() {
 		}),
 	})
 	if err != nil {
-		entryLog.Error(err, "unable to start manager")
+		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
@@ -67,13 +61,13 @@ func main() {
 		For(&appsv1.StatefulSet{}).
 		WithDefaulter(&pkg.StatefulSetVolume{Client: mgr.GetClient()}).
 		Complete(); err != nil {
-		entryLog.Error(err, "unable to create webhook", "webhook", "dp")
+		setupLog.Error(err, "unable to create webhook", "webhook", "sts-webhook")
 		os.Exit(1)
 	}
 
-	entryLog.Info("starting manager")
+	setupLog.Info("starting manager")
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-		entryLog.Error(err, "problem running manager")
+		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }
