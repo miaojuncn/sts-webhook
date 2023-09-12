@@ -6,7 +6,6 @@ import (
 
 	"github.com/miaojuncn/sts-webhook/pkg"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2/klogr"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -18,13 +17,8 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
 	setupLog = log.Log.WithName("setup")
 )
-
-func init() {
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.StatefulSet{}, &appsv1.StatefulSetList{})
-}
 
 func main() {
 
@@ -42,7 +36,6 @@ func main() {
 	log.SetLogger(klogr.New())
 
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
-		Scheme: scheme,
 		Metrics: server.Options{
 			BindAddress: "0",
 		},
